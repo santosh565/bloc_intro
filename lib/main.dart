@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 void main() {
   runApp(const MyApp());
@@ -65,4 +66,54 @@ abstract class CounterState {
 
 class CounterStateValid extends CounterState {
   const CounterStateValid(int value) : super(value);
+}
+
+class CounterStateInvalid extends CounterState {
+  final String invalidValue;
+  const CounterStateInvalid({
+    required this.invalidValue,
+    required int previousValue,
+  }) : super(previousValue);
+}
+
+@immutable
+abstract class CounterEvent {
+  final String value;
+  const CounterEvent(this.value);
+}
+
+class CounterEventIncrement extends CounterEvent {
+  const CounterEventIncrement(String value) : super(value);
+}
+
+class CounterEventDecrement extends CounterEvent {
+  const CounterEventDecrement(String value) : super(value);
+}
+
+class CounterBloc extends Bloc<CounterEvent, CounterState> {
+  CounterBloc() : super(const CounterStateValid(0)) {
+    on<CounterEventIncrement>((event, emit) {
+      final integer = int.tryParse(event.value);
+      if (integer == null) {
+        emit(CounterStateInvalid(
+          invalidValue: event.value,
+          previousValue: state.value,
+        ));
+      } else {
+        emit(CounterStateValid(integer + state.value));
+      }
+    });
+
+    on<CounterEventDecrement>((event, emit) {
+      final integer = int.tryParse(event.value);
+      if (integer == null) {
+        emit(CounterStateInvalid(
+          invalidValue: event.value,
+          previousValue: state.value,
+        ));
+      } else {
+        emit(CounterStateValid(state.value - integer));
+      }
+    });
+  }
 }
