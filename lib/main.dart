@@ -29,30 +29,77 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('home page'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
+    return BlocProvider(
+      create: (context) => CounterBloc(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('home page'),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        body: BlocConsumer<CounterBloc, CounterState>(
+          listener: (context, state) {
+            _controller.clear();
+          },
+          builder: (context, state) {
+            final invalidValue =
+                (state is CounterStateInvalid) ? state.invalidValue : '';
+
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Text('Current value => ${state.value}'),
+                  Visibility(
+                      child: Text('Invalid value => $invalidValue'),
+                      visible: invalidValue.isNotEmpty),
+                  TextField(
+                    controller: _controller,
+                    decoration: const InputDecoration(
+                      labelText: 'Enter a value',
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                  Row(
+                    children: [
+                      TextButton(
+                        child: const Text('Increment'),
+                        onPressed: () {
+                          context
+                              .read<CounterBloc>()
+                              .add(CounterEventIncrement(_controller.text));
+                        },
+                      ),
+                      TextButton(
+                        child: const Text('Decrement'),
+                        onPressed: () {
+                          context
+                              .read()
+                              .add(CounterEventDecrement(_controller.text));
+                        },
+                      ),
+                    ],
+                  )
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -91,7 +138,8 @@ class CounterEventDecrement extends CounterEvent {
 }
 
 class CounterBloc extends Bloc<CounterEvent, CounterState> {
-  CounterBloc() : super(const CounterStateValid(0)) {
+  CounterBloc() : super(const CounterStateValid(0))
+   {
     on<CounterEventIncrement>((event, emit) {
       final integer = int.tryParse(event.value);
       if (integer == null) {
